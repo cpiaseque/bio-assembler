@@ -181,9 +181,9 @@ var runCmd = &cobra.Command{
 		fmt.Println()
 
 		fmt.Println("=======================================================================")
-		fmt.Printf("СБОРКА ГЕНОМА %s ЗАВЕРШЕНА!\n", srrID)
-		fmt.Printf("Ваш финальный геном находится в файле: %s\n", pilonContigs)
-		fmt.Printf("Отчет Qualimap для просмотра: %s/qualimap_report.html\n", qualimapDir)
+		fmt.Printf("Genome assembly %s complete!\n", srrID)
+		fmt.Printf("Final report path: %s\n", pilonContigs)
+		fmt.Printf("Qualimap report: %s/qualimap_report.html\n", qualimapDir)
 		fmt.Println("=======================================================================")
 	},
 }
