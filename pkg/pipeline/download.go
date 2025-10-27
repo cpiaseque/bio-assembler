@@ -31,12 +31,23 @@ func (s *DownloadStep) Run() error {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	cmd := exec.Command("fastq-dump", "--progress", "--split-files", "--gzip", "-O", s.Output, s.SrrID)
+	// Use manual progress rendering instead of relying on fastq-dump --progress
+	stop := StartSpinner(fmt.Sprintf("Downloading %s (fastq-dump)", s.SrrID))
+
+	cmd := exec.Command("fastq-dump", "--split-files", "--gzip", "-O", s.Output, s.SrrID)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("fastq-dump command failed: %w", err)
+	runErr := cmd.Run()
+	if stop != nil {
+		if runErr != nil {
+			stop("failed")
+		} else {
+			stop("done")
+		}
+	}
+	if runErr != nil {
+		return fmt.Errorf("fastq-dump command failed: %w", runErr)
 	}
 
 	if !fileExists(rawFq1) || !fileExists(rawFq2) {

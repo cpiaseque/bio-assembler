@@ -3,8 +3,11 @@ package pipeline
 import (
 	"bufio"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
+	"sync"
+	"time"
 )
 
 // fileExists checks if a file exists and is not a directory.
@@ -53,4 +56,37 @@ func removeIfExists(path string) error {
 		return os.Remove(path)
 	}
 	return nil
+}
+
+// StartSpinner renders a simple CLI spinner with a given prefix message.
+// It returns a stop function. Call stop with a final status string (e.g., "done" or "failed").
+// The spinner runs in a goroutine and will be cleaned up synchronously when stop is called.
+func StartSpinner(prefix string) func(final string) {
+	frames := []rune{'|', '/', '-', '\\'}
+	ticker := time.NewTicker(120 * time.Millisecond)
+	done := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		i := 0
+		for {
+			select {
+			case <-ticker.C:
+				fmt.Printf("\r%s %c", prefix, frames[i%len(frames)])
+				i++
+			case <-done:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+	return func(final string) {
+		close(done)
+		wg.Wait()
+		// Clear spinner line and print final status
+		fmt.Printf("\r%s %s\n", prefix, final)
+	}
 }
