@@ -44,7 +44,9 @@ To execute the full pipeline for a given sample:
 ./bio-assembler run \
   -s <SRR_ID> \
   --pilon-jar /path/to/pilon.jar \
-  --adapter-fasta /path/to/adapters.fa
+  --adapter-fasta /path/to/adapters.fa \
+  [--filter-mode standard|strict|lenient|custom] \
+  [--filter-custom-args "<TRIMMOMATIC_ARGS>"]
 ```
 
 Example:
@@ -53,8 +55,33 @@ Example:
 ./bio-assembler run \
   -s SRR13511998 \
   --pilon-jar /home/user/tools/pilon-1.24.jar \
-  --adapter-fasta /home/user/tools/Trimmomatic-0.39/adapters/TruSeq3-PE.fa
+  --adapter-fasta /home/user/tools/Trimmomatic-0.39/adapters/TruSeq3-PE.fa \
+  --filter-mode strict
 ```
+
+### Read filtering modes (Trimmomatic)
+
+You can control how aggressive the read trimming is during the Trimmomatic step:
+
+- **`--filter-mode standard`** (default):  
+  Uses a balanced preset: `LEADING:20 TRAILING:20 SLIDINGWINDOW:4:25 MINLEN:30`.
+- **`--filter-mode strict`**:  
+  More aggressive trimming, keeping only higher-quality and longer reads:  
+  `LEADING:30 TRAILING:30 SLIDINGWINDOW:4:30 MINLEN:50`.
+- **`--filter-mode lenient`**:  
+  Softer trimming to retain more reads:  
+  `LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:30`.
+- **`--filter-mode custom`** with **`--filter-custom-args`**:  
+  Allows you to fully control Trimmomatic parameters yourself. Example:
+
+  ```bash
+  ./bio-assembler run \
+    -s SRR13511998 \
+    --pilon-jar /home/user/tools/pilon-1.24.jar \
+    --adapter-fasta /home/user/tools/Trimmomatic-0.39/adapters/TruSeq3-PE.fa \
+    --filter-mode custom \
+    --filter-custom-args "LEADING:5 TRAILING:5 SLIDINGWINDOW:4:20 MINLEN:36"
+  ```
 
 ## Dependencies
 

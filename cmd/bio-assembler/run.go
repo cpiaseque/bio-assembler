@@ -20,6 +20,8 @@ var (
 	pilonJarPath     string
 	adapterFastaPath string
 	noParallel       bool
+	filterMode       string
+	filterCustomArgs string
 )
 
 func init() {
@@ -29,6 +31,8 @@ func init() {
 	runCmd.Flags().StringVar(&pilonJarPath, "pilon-jar", "", "Path to the pilon.jar file (required)")
 	runCmd.Flags().StringVar(&adapterFastaPath, "adapter-fasta", "", "Path to the adapter FASTA file for Trimmomatic (required)")
 	runCmd.Flags().BoolVar(&noParallel, "no-parallel", false, "Disable parallel execution where possible")
+	runCmd.Flags().StringVar(&filterMode, "filter-mode", "standard", "Read filtering mode for Trimmomatic: standard, strict, lenient, or custom")
+	runCmd.Flags().StringVar(&filterCustomArgs, "filter-custom-args", "", "Custom Trimmomatic filtering arguments (used only when --filter-mode=custom)")
 
 	runCmd.MarkFlagRequired("srr")
 	runCmd.MarkFlagRequired("pilon-jar")
@@ -89,6 +93,8 @@ var runCmd = &cobra.Command{
 			UnpairedOutput2:  trimmedUnpaired2,
 			Threads:          threads,
 			AdapterFastaPath: adapterFastaPath,
+		Mode:             filterMode,
+		CustomArgs:       filterCustomArgs,
 		}
 		fastqcTrim := &pipeline.TrimmedFastQCStep{
 			InputFq1: trimmedPaired1,

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -89,4 +90,14 @@ func StartSpinner(prefix string) func(final string) {
 		// Clear spinner line and print final status
 		fmt.Printf("\r%s %s\n", prefix, final)
 	}
+}
+
+// splitArgs is a tiny helper that splits a string on whitespace.
+// It is used to expand custom Trimmomatic parameters supplied by the user.
+func splitArgs(s string) []string {
+	fields := strings.Fields(s)
+	if len(fields) == 0 {
+		return nil
+	}
+	return fields
 }

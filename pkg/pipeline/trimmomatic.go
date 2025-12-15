@@ -16,6 +16,13 @@ type TrimmomaticStep struct {
 	UnpairedOutput2  string
 	Threads          int
 	AdapterFastaPath string
+	// Mode controls which preset of filtering parameters is used:
+	// "standard" (default), "strict", "lenient", or "custom".
+	Mode string
+	// CustomArgs is used only when Mode == "custom" and allows the user
+	// to pass a raw argument string with Trimmomatic filtering settings.
+	// Example: "LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:50".
+	CustomArgs string
 }
 
 func (s *TrimmomaticStep) Name() string {
@@ -43,7 +50,7 @@ func (s *TrimmomaticStep) Run() error {
 		_ = removeIfExists(s.UnpairedOutput2)
 	}
 
-	fmt.Println("Running Trimmomatic for read trimming...")
+	fmt.Printf("Running Trimmomatic for read trimming (mode=%s)...\n", s.Mode)
 
 	// Ensure output directories exist
 	outDirs := map[string]struct{}{
@@ -58,12 +65,59 @@ func (s *TrimmomaticStep) Run() error {
 		}
 	}
 
-	cmd := exec.Command("trimmomatic", "PE", "-threads", fmt.Sprintf("%d", s.Threads), "-phred33",
+	// Base arguments shared between all modes
+	args := []string{
+		"PE",
+		"-threads", fmt.Sprintf("%d", s.Threads),
+		"-phred33",
 		s.InputFq1, s.InputFq2,
 		s.PairedOutput1, s.UnpairedOutput1,
 		s.PairedOutput2, s.UnpairedOutput2,
 		fmt.Sprintf("ILLUMINACLIP:%s:2:30:10", s.AdapterFastaPath),
-		"LEADING:20", "TRAILING:20", "SLIDINGWINDOW:4:25", "MINLEN:30")
+	}
+
+	// Choose filtering parameters depending on the selected mode.
+	switch s.Mode {
+	case "", "standard":
+		// Original defaults
+		args = append(args,
+			"LEADING:20",
+			"TRAILING:20",
+			"SLIDINGWINDOW:4:25",
+			"MINLEN:30",
+		)
+	case "strict":
+		// Более жёсткая фильтрация: выше порог качества и длины
+		args = append(args,
+			"LEADING:30",
+			"TRAILING:30",
+			"SLIDINGWINDOW:4:30",
+			"MINLEN:50",
+		)
+	case "lenient":
+		// Более мягкая фильтрация, сохраняющая больше ридов
+		args = append(args,
+			"LEADING:3",
+			"TRAILING:3",
+			"SLIDINGWINDOW:4:20",
+			"MINLEN:30",
+		)
+	case "custom":
+		if s.CustomArgs == "" {
+			return fmt.Errorf("filter mode is 'custom' but no custom arguments were provided")
+		}
+		// Разбиваем строку по пробелам и просто добавляем как есть.
+		// Пользователь полностью контролирует параметры.
+		for _, part := range splitArgs(s.CustomArgs) {
+			if part != "" {
+				args = append(args, part)
+			}
+		}
+	default:
+		return fmt.Errorf("unknown filter mode: %s (expected: standard, strict, lenient, custom)", s.Mode)
+	}
+
+	cmd := exec.Command("trimmomatic", args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
